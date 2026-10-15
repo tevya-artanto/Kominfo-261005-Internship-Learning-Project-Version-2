@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from catG.views import ReactView
+from catGallery.catG.views import ReactView
 
 urlpatterns = [
     path('admin/', admin.site.urls),

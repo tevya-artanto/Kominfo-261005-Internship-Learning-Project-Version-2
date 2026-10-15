@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.contrib.auth.models import Comment
+from .models import Comment
 from rest_framework import permissions, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
