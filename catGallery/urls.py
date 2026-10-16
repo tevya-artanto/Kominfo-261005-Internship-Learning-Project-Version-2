@@ -21,5 +21,6 @@ from catGallery.catG.views import ReactView, getCat
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', getCat, name="getCat"),
-    path('image/', ReactView.as_view(), name="react-view")
+    # path('image/', ReactView.as_view(), name="react-view")
+    path('api/cats/<str:pk>/comments/', ReactView.as_view(), name="react-view"),
 ]
