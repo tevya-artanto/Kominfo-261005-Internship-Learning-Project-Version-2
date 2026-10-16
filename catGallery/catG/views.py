@@ -13,11 +13,11 @@ from catGallery.catG.serializers import CommentSerializer
 def getCat(request):
     catURL = "https://cataas.com/api/cats"
     try:
-        response = request.get(catURL, timeout=5)
+        response = requests.get(catURL, timeout=5)
         data = response.json()
-        return JsonResponse(data)        
+        return JsonResponse(data, safe=False)        
     except requests.exceptions.HTTPError as e:
-        return JsonResponse(e)
+        return JsonResponse(e, safe=False)
 
 # Comment function
 class ReactView(APIView):
