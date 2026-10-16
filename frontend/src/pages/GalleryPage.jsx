@@ -1,44 +1,118 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import mockCats from "../data/mockCats.js";
+import { getCats } from "../services/api.js";
+
 import CatCard from "../components/CatCard.jsx";
 import Pagination from "../components/Pagination.jsx";
 
+
 function GalleryPage() {
 
+    // stores cats from Django
+    const [cats, setCats] = useState([]);
+
     // stores selected tag
-    const [selectedTag, setSelectedTag] = useState("");
+    const [selectedTag, setSelectedTag] =
+        useState("");
 
     // stores current page
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] =
+        useState(1);
 
-    // number of cats shown on one page
+    // loading message
+    const [loading, setLoading] =
+        useState(true);
+
+    // error message
+    const [error, setError] =
+        useState("");
+
+
     const catsPerPage = 8;
 
 
-    // gets all available tags
+    // gets real cats from Django
+    useEffect(() => {
+
+        async function loadCats() {
+
+            try {
+
+                const data = await getCats();
+
+                // converts CatAAS data into the format
+                // used by our React components
+                const formattedCats = data.map((cat) => {
+
+                    const catId =
+                        cat._id || cat.id;
+
+                    return {
+                        id: catId,
+
+                        image:
+                            `https://cataas.com/cat/${catId}`,
+
+                        tags:
+                            cat.tags || []
+                    };
+
+                });
+
+
+                setCats(formattedCats);
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                setError(
+                    "Could not load cats from Django."
+                );
+
+            }
+
+            finally {
+
+                setLoading(false);
+
+            }
+
+        }
+
+
+        loadCats();
+
+    }, []);
+
+
+    // creates tag list from real cat data
     const allTags = [
         ...new Set(
-            mockCats.flatMap((cat) => cat.tags)
+            cats.flatMap(
+                (cat) => cat.tags
+            )
         )
     ].sort();
 
 
-    // filters cats using selected tag
+    // filters cats
     const filteredCats = selectedTag
-        ? mockCats.filter((cat) =>
+        ? cats.filter((cat) =>
             cat.tags.includes(selectedTag)
         )
-        : mockCats;
+        : cats;
 
 
-    // calculates number of pages
+    // number of pages
     const totalPages = Math.ceil(
         filteredCats.length / catsPerPage
     );
 
 
-    // gets cats for current page
+    // cats for current page
     const startIndex =
         (currentPage - 1) * catsPerPage;
 
@@ -52,18 +126,17 @@ function GalleryPage() {
         );
 
 
-    // changes selected tag
     function handleTagChange(event) {
 
-        setSelectedTag(event.target.value);
+        setSelectedTag(
+            event.target.value
+        );
 
-        // returns to first page when filter changes
         setCurrentPage(1);
 
     }
 
 
-    // clears filter
     function handleClearFilter() {
 
         setSelectedTag("");
@@ -73,7 +146,6 @@ function GalleryPage() {
     }
 
 
-    // changes page
     function handlePageChange(pageNumber) {
 
         if (
@@ -88,11 +160,47 @@ function GalleryPage() {
     }
 
 
+    if (loading) {
+
+        return (
+            <div className="page">
+
+                <main>
+                    <p>
+                        Loading cats...
+                    </p>
+                </main>
+
+            </div>
+        );
+
+    }
+
+
+    if (error) {
+
+        return (
+            <div className="page">
+
+                <main>
+                    <p>
+                        {error}
+                    </p>
+                </main>
+
+            </div>
+        );
+
+    }
+
+
     return (
         <div className="page">
 
             <header>
-                <h1>CAT GALLERY</h1>
+                <h1>
+                    CAT GALLERY
+                </h1>
             </header>
 
 
@@ -100,10 +208,13 @@ function GalleryPage() {
 
                 <section className="gallery-heading">
 
-                    <h2>Cats</h2>
+                    <h2>
+                        Cats
+                    </h2>
 
                     <p>
-                        Browse cats, filter by tag, and open details.
+                        Browse cats, filter by tag,
+                        and open details.
                     </p>
 
                 </section>
@@ -116,6 +227,7 @@ function GalleryPage() {
                         <label htmlFor="tag-filter">
                             Filter by tag
                         </label>
+
 
                         <select
                             id="tag-filter"
@@ -188,5 +300,6 @@ function GalleryPage() {
         </div>
     );
 }
+
 
 export default GalleryPage;

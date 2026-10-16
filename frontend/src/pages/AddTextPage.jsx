@@ -1,24 +1,36 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import {
+    useEffect,
+    useState
+} from "react";
 
-import mockCats from "../data/mockCats.js";
+import {
+    Link,
+    useParams
+} from "react-router-dom";
+
+import {
+    getCats,
+    addTextToCat
+} from "../services/api.js";
 
 
 function AddTextPage() {
 
-    // gets cat ID from URL
     const { catId } = useParams();
 
 
-    // finds selected cat
-    const cat = mockCats.find(
-        (cat) => cat.id === catId
-    );
+    const [cat, setCat] =
+        useState(null);
+
+    const [loading, setLoading] =
+        useState(true);
+
+    const [error, setError] =
+        useState("");
 
 
-    // text settings
     const [imageText, setImageText] =
-        useState("I need more snacks");
+        useState("");
 
     const [textSize, setTextSize] =
         useState(50);
@@ -27,14 +39,174 @@ function AddTextPage() {
         useState("#ffffff");
 
 
-    // if cat cannot be found
-    if (!cat) {
+    const [
+        generatedImage,
+        setGeneratedImage
+    ] = useState("");
+
+
+    const [
+        generating,
+        setGenerating
+    ] = useState(false);
+
+
+    const [
+        generateError,
+        setGenerateError
+    ] = useState("");
+
+
+    // loads real cat
+    useEffect(() => {
+
+        async function loadCat() {
+
+            try {
+
+                const data =
+                    await getCats();
+
+
+                const selectedCat =
+                    data.find(
+                        (item) =>
+                            item.id === catId ||
+                            item._id === catId
+                    );
+
+
+                if (!selectedCat) {
+
+                    setError(
+                        "Cat not found"
+                    );
+
+                    return;
+
+                }
+
+
+                const realId =
+                    selectedCat.id ||
+                    selectedCat._id;
+
+
+                setCat({
+                    id: realId,
+
+                    image:
+                        `https://cataas.com/cat/${realId}`
+                });
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                setError(
+                    "Could not load cat."
+                );
+
+            }
+
+            finally {
+
+                setLoading(false);
+
+            }
+
+        }
+
+
+        loadCat();
+
+    }, [catId]);
+
+
+    // asks Django to generate image
+    async function handleGenerate() {
+
+        if (
+            imageText.trim() === ""
+        ) {
+            return;
+        }
+
+
+        try {
+
+            setGenerating(true);
+
+            setGenerateError("");
+
+
+            const imageUrl =
+                await addTextToCat(
+                    cat.id,
+                    imageText.trim(),
+                    Number(textSize),
+                    textColor
+                );
+
+
+            if (!imageUrl) {
+
+                throw new Error(
+                    "Backend did not return an image."
+                );
+
+            }
+
+
+            setGeneratedImage(
+                imageUrl
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            setGenerateError(
+                "Add text backend is not available yet."
+            );
+
+        }
+
+        finally {
+
+            setGenerating(false);
+
+        }
+
+    }
+
+
+    if (loading) {
+
+        return (
+            <div className="text-page">
+
+                <p>
+                    Loading cat...
+                </p>
+
+            </div>
+        );
+
+    }
+
+
+    if (error || !cat) {
 
         return (
             <div className="text-page">
 
                 <h2>
-                    Cat not found
+                    {error || "Cat not found"}
                 </h2>
 
                 <Link to="/">
@@ -68,20 +240,12 @@ function AddTextPage() {
                 <div className="text-cat-image">
 
                     <img
-                        src={cat.image}
+                        src={
+                            generatedImage ||
+                            cat.image
+                        }
                         alt="Cat"
                     />
-
-
-                    <p
-                        className="preview-text"
-                        style={{
-                            fontSize: `${textSize}px`,
-                            color: textColor
-                        }}
-                    >
-                        {imageText.toUpperCase()}
-                    </p>
 
                 </div>
 
@@ -104,8 +268,11 @@ function AddTextPage() {
                     type="text"
                     value={imageText}
                     onChange={(event) =>
-                        setImageText(event.target.value)
+                        setImageText(
+                            event.target.value
+                        )
                     }
+                    placeholder="Enter text"
                 />
 
 
@@ -120,7 +287,9 @@ function AddTextPage() {
                     max="100"
                     value={textSize}
                     onChange={(event) =>
-                        setTextSize(event.target.value)
+                        setTextSize(
+                            event.target.value
+                        )
                     }
                 />
 
@@ -129,6 +298,7 @@ function AddTextPage() {
                     Text colour
                 </label>
 
+
                 <div className="color-row">
 
                     <input
@@ -136,7 +306,9 @@ function AddTextPage() {
                         type="color"
                         value={textColor}
                         onChange={(event) =>
-                            setTextColor(event.target.value)
+                            setTextColor(
+                                event.target.value
+                            )
                         }
                     />
 
@@ -146,10 +318,32 @@ function AddTextPage() {
 
                 </div>
 
+
+                <button
+                    type="button"
+                    className="dark-button"
+                    onClick={handleGenerate}
+                    disabled={generating}
+                >
+                    {generating
+                        ? "Generating..."
+                        : "Generate image"}
+                </button>
+
+
+                {generateError && (
+
+                    <p className="error-message">
+                        {generateError}
+                    </p>
+
+                )}
+
             </div>
 
         </div>
     );
 }
+
 
 export default AddTextPage;

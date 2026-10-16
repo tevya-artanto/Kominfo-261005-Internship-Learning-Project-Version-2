@@ -35,11 +35,6 @@ function CatCard({ cat }) {
 
                     </div>
 
-
-                    <p className="comments">
-                        □ {cat.comments} comments
-                    </p>
-
                 </div>
 
             </article>

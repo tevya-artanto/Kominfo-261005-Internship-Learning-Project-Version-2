@@ -1,13 +1,21 @@
 import { useState } from "react";
 
 
-function CommentForm({ onAddComment }) {
+function CommentForm({
+    onAddComment
+}) {
 
-    const [username, setUsername] = useState("");
-    const [comment, setComment] = useState("");
+    const [username, setUsername] =
+        useState("");
+
+    const [comment, setComment] =
+        useState("");
+
+    const [submitting, setSubmitting] =
+        useState(false);
 
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
 
         event.preventDefault();
 
@@ -20,18 +28,28 @@ function CommentForm({ onAddComment }) {
         }
 
 
-        const newComment = {
-            id: Date.now(),
-            username: username,
-            content: comment
-        };
+        try {
+
+            setSubmitting(true);
 
 
-        onAddComment(newComment);
+            await onAddComment(
+                username.trim(),
+                comment.trim()
+            );
 
 
-        setUsername("");
-        setComment("");
+            setUsername("");
+            setComment("");
+
+        }
+
+        finally {
+
+            setSubmitting(false);
+
+        }
+
     }
 
 
@@ -49,7 +67,9 @@ function CommentForm({ onAddComment }) {
                 type="text"
                 value={username}
                 onChange={(event) =>
-                    setUsername(event.target.value)
+                    setUsername(
+                        event.target.value
+                    )
                 }
                 placeholder="Enter username"
             />
@@ -62,7 +82,9 @@ function CommentForm({ onAddComment }) {
             <textarea
                 value={comment}
                 onChange={(event) =>
-                    setComment(event.target.value)
+                    setComment(
+                        event.target.value
+                    )
                 }
                 placeholder="Write a comment..."
             />
@@ -71,12 +93,16 @@ function CommentForm({ onAddComment }) {
             <button
                 type="submit"
                 className="dark-button"
+                disabled={submitting}
             >
-                Post comment
+                {submitting
+                    ? "Posting..."
+                    : "Post comment"}
             </button>
 
         </form>
     );
 }
+
 
 export default CommentForm;

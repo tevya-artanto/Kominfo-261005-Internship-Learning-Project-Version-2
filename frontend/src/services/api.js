@@ -1,36 +1,15 @@
-// Django backend URL
 const API_URL = "http://127.0.0.1:8000";
 
 
-// gets cats from Django
-export async function getCats(page = 1, limit = 8, tag = "") {
-
-    let url =
-        `${API_URL}/api/cats/?page=${page}&limit=${limit}`;
-
-    if (tag !== "") {
-        url += `&tag=${encodeURIComponent(tag)}`;
-    }
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-        throw new Error("Could not load cats");
-    }
-
-    return response.json();
-}
-
-
-// gets tags from Django
-export async function getTags() {
+// gets real cats from Django
+export async function getCats() {
 
     const response = await fetch(
-        `${API_URL}/api/tags/`
+        `${API_URL}/`
     );
 
     if (!response.ok) {
-        throw new Error("Could not load tags");
+        throw new Error("Could not load cats");
     }
 
     return response.json();
@@ -52,7 +31,7 @@ export async function getComments(catId) {
 }
 
 
-// posts a comment
+// posts comment to Django
 export async function postComment(
     catId,
     username,
@@ -83,7 +62,7 @@ export async function postComment(
 }
 
 
-// sends add-text settings to Django
+// sends text settings to Django
 export async function addTextToCat(
     catId,
     text,
@@ -112,5 +91,35 @@ export async function addTextToCat(
         throw new Error("Could not generate image");
     }
 
-    return response.json();
+
+    const contentType =
+        response.headers.get("content-type");
+
+
+    // if Django returns JSON
+    if (
+        contentType &&
+        contentType.includes(
+            "application/json"
+        )
+    ) {
+
+        const data = await response.json();
+
+        return (
+            data.image_url ||
+            data.image ||
+            data.url
+        );
+
+    }
+
+
+    // if Django returns an image directly
+    const imageBlob =
+        await response.blob();
+
+    return URL.createObjectURL(
+        imageBlob
+    );
 }

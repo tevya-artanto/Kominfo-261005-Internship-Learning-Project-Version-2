@@ -1,47 +1,224 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import {
+    useEffect,
+    useState
+} from "react";
 
-import mockCats from "../data/mockCats.js";
+import {
+    Link,
+    useParams
+} from "react-router-dom";
 
-import CommentList from "../components/CommentList.jsx";
-import CommentForm from "../components/CommentForm.jsx";
+import {
+    getCats,
+    getComments,
+    postComment
+} from "../services/api.js";
+
+import CommentList
+    from "../components/CommentList.jsx";
+
+import CommentForm
+    from "../components/CommentForm.jsx";
 
 
 function CatDetailsPage() {
 
-    // gets cat ID from URL
     const { catId } = useParams();
 
 
-    // finds selected cat
-    const cat = mockCats.find(
-        (cat) => cat.id === catId
-    );
+    const [cat, setCat] =
+        useState(null);
+
+    const [comments, setComments] =
+        useState([]);
+
+    const [loading, setLoading] =
+        useState(true);
+
+    const [error, setError] =
+        useState("");
+
+    const [commentError, setCommentError] =
+        useState("");
 
 
-    // temporary comments
-    const [comments, setComments] = useState([]);
+    // gets selected cat
+    useEffect(() => {
+
+        async function loadCat() {
+
+            try {
+
+                const data =
+                    await getCats();
 
 
-    // adds new comment
-    function handleAddComment(newComment) {
+                const selectedCat =
+                    data.find(
+                        (item) =>
+                            item.id === catId ||
+                            item._id === catId
+                    );
 
-        setComments([
-            ...comments,
-            newComment
-        ]);
+
+                if (!selectedCat) {
+
+                    setError(
+                        "Cat not found"
+                    );
+
+                    return;
+
+                }
+
+
+                const realId =
+                    selectedCat.id ||
+                    selectedCat._id;
+
+
+                setCat({
+                    id: realId,
+
+                    image:
+                        `https://cataas.com/cat/${realId}`,
+
+                    tags:
+                        selectedCat.tags || []
+                });
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                setError(
+                    "Could not load cat."
+                );
+
+            }
+
+            finally {
+
+                setLoading(false);
+
+            }
+
+        }
+
+
+        loadCat();
+
+    }, [catId]);
+
+
+    // gets comments from Django
+    useEffect(() => {
+
+        async function loadComments() {
+
+            try {
+
+                const data =
+                    await getComments(
+                        catId
+                    );
+
+                setComments(data);
+
+                setCommentError("");
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                setComments([]);
+
+                setCommentError(
+                    "Comments backend is not available yet."
+                );
+
+            }
+
+        }
+
+
+        loadComments();
+
+    }, [catId]);
+
+
+    // sends comment to Django
+    async function handleAddComment(
+        username,
+        content
+    ) {
+
+        try {
+
+            setCommentError("");
+
+
+            await postComment(
+                catId,
+                username,
+                content
+            );
+
+
+            // reloads comments from database
+            const updatedComments =
+                await getComments(
+                    catId
+                );
+
+
+            setComments(
+                updatedComments
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            setCommentError(
+                "Could not save comment."
+            );
+
+            throw error;
+
+        }
 
     }
 
 
-    // if cat cannot be found
-    if (!cat) {
+    if (loading) {
+
+        return (
+            <div className="details-page">
+
+                <p>
+                    Loading cat...
+                </p>
+
+            </div>
+        );
+
+    }
+
+
+    if (error || !cat) {
 
         return (
             <div className="details-page">
 
                 <h2>
-                    Cat not found
+                    {error || "Cat not found"}
                 </h2>
 
                 <Link to="/">
@@ -102,13 +279,22 @@ function CatDetailsPage() {
 
                     <div className="tags">
 
-                        {cat.tags.map((tag) => (
+                        {cat.tags.length > 0
+                            ? cat.tags.map(
+                                (tag) => (
 
-                            <span key={tag}>
-                                {tag}
-                            </span>
+                                    <span key={tag}>
+                                        {tag}
+                                    </span>
 
-                        ))}
+                                )
+                            )
+                            : (
+                                <p>
+                                    No tags
+                                </p>
+                            )
+                        }
 
                     </div>
 
@@ -141,9 +327,22 @@ function CatDetailsPage() {
                 </div>
 
 
-                <CommentList
-                    comments={comments}
-                />
+                {commentError && (
+
+                    <p className="error-message">
+                        {commentError}
+                    </p>
+
+                )}
+
+
+                {!commentError && (
+
+                    <CommentList
+                        comments={comments}
+                    />
+
+                )}
 
 
                 <h3>
@@ -152,7 +351,9 @@ function CatDetailsPage() {
 
 
                 <CommentForm
-                    onAddComment={handleAddComment}
+                    onAddComment={
+                        handleAddComment
+                    }
                 />
 
             </div>
@@ -160,5 +361,6 @@ function CatDetailsPage() {
         </div>
     );
 }
+
 
 export default CatDetailsPage;
