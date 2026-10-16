@@ -23,14 +23,14 @@ def getCat(request):
 class ReactView(APIView):
     serializer_class = CommentSerializer
 
-    def get(self, request):
+    def get(self, request, pk):
         detail = [
-            {"id": obj.id, "username": obj.username, "content": obj.content, "date_posted": obj.date_posted}
+            {"id": obj.id, "catID": pk, "username": obj.username, "content": obj.content, "date_posted": obj.date_posted}
             for obj in Comment.objects.all()
         ]
         return Response(detail)
 
-    def post(self, request):
+    def post(self, request, pk):
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()

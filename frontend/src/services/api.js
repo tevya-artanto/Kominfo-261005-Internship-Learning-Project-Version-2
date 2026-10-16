@@ -48,6 +48,7 @@ export async function postComment(
             },
 
             body: JSON.stringify({
+                catID: catId,
                 username: username,
                 content: content
             })
