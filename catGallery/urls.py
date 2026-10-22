@@ -23,4 +23,4 @@ urlpatterns = [
     path('', getCat, name="getCat"),
     # path('image/', ReactView.as_view(), name="react-view")
     path('api/cats/<str:pk>/comments/', ReactView.as_view(), name="react-view"),
-path('api/cats/<str:pk>/says/',addTexttoCat,name="addText"),]
+    path('api/cats/<str:pk>/says/',addTexttoCat,name="addText"),]
