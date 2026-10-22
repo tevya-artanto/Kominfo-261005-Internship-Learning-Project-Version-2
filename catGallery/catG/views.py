@@ -19,6 +19,16 @@ def getCat(request):
     except requests.exceptions.HTTPError as e:
         return JsonResponse(e, safe=False)
 
+# Gets list of tags
+def getTag(request):
+    tagURL = "https://cataas.com/api/tags"
+    try:
+        response = requests.get(tagURL, timeout=5)
+        data = response.json()
+        return JsonResponse(data, safe=False)        
+    except requests.exceptions.HTTPError as e:
+        return JsonResponse(e, safe=False)
+
 # Comment function
 class ReactView(APIView):
     serializer_class = CommentSerializer
@@ -36,4 +46,14 @@ class ReactView(APIView):
             serializer.save()
             return Response(serializer.data)
 
+# Adds text to chosen cat image
+def addTexttoCat(request, pk, text, size, color):
+    # color is passed without the hashtag
+    url = "https://cataas.com/cat/" + pk + "/says/" + text + "?fontSize=" + size + "&fontColor=%23" + color
+    try:
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        return JsonResponse(data, safe=False)        
+    except requests.exceptions.HTTPError as e:
+        return JsonResponse(e, safe=False)
 

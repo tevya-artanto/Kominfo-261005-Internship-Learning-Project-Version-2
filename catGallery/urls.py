@@ -16,11 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from catGallery.catG.views import ReactView, getCat
+from catGallery.catG.views import ReactView, getCat, addTexttoCat
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', getCat, name="getCat"),
     # path('image/', ReactView.as_view(), name="react-view")
     path('api/cats/<str:pk>/comments/', ReactView.as_view(), name="react-view"),
+    path('api/cats/<str:pk>/says/<str:text>?fontSize=<int:size>&fontColor=%23<int:color>', addTexttoCat, name="addText"),
 ]
