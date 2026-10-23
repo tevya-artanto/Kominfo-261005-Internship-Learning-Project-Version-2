@@ -1,3 +1,5 @@
+from urllib.parse import quote, urlencode
+from rest_framework.decorators import api_view
 from django.shortcuts import render
 from .models import Comment
 from rest_framework import permissions, viewsets
@@ -6,6 +8,7 @@ from rest_framework.response import Response
 from .serializers import CommentSerializer
 import requests
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from catGallery.catG.serializers import CommentSerializer
 
@@ -47,13 +50,24 @@ class ReactView(APIView):
             return Response(serializer.data)
 
 # Adds text to chosen cat image
-def addTexttoCat(request, pk, text, size, color):
-    # color is passed without the hashtag
-    url = "https://cataas.com/cat/" + pk + "/says/" + text + "?fontSize=" + size + "&fontColor=%23" + color
-    try:
-        response = requests.get(url, timeout=5)
-        data = response.json()
-        return JsonResponse(data, safe=False)        
-    except requests.exceptions.HTTPError as e:
-        return JsonResponse(e, safe=False)
+@csrf_exempt
+@api_view(["POST"])
+def addTexttoCat(request, pk):
 
+    # gets values sent from React
+    text = request.data.get("text", "")
+    size = request.data.get("size", 50)
+    color = request.data.get("color", "#ffffff")
+
+    # checks if text is empty
+    if not text:
+        return Response(
+            {"error": "Text is required"},status=400)
+    # makes text safe for URL
+    safe_text = quote(str(text),safe="")
+    # creates CatAAS query settings
+    query = urlencode({"fontSize": size,"fontColor": color})
+    # creates CatAAS image URL
+    image_url = (f"https://cataas.com/cat/"f"{pk}/says/{safe_text}?{query}")
+    # sends image URL back to React
+    return Response({"image_url": image_url})
