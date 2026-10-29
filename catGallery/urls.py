@@ -18,10 +18,12 @@ from django.contrib import admin
 from django.urls import path
 
 from catGallery.catG.views import (
-    ReactView,getCat,addTexttoCat)
+    ReactView,getCat,addTexttoCat,AllCats,getSpecificCat)
 
 urlpatterns = [path("admin/",admin.site.urls),
-    path("",getCat,name="getCat"),
+    # path("",getCat,name="getCat"),
+    path("api/cats/",AllCats.as_view(),name="allCats"),
+    path("api/cats/<str:pk>",getSpecificCat,name="getCat"),
     path("api/cats/<str:pk>/comments/",ReactView.as_view(),name="react-view"),
     path("api/cats/<str:pk>/says/",addTexttoCat,name="addText"),
 ]
