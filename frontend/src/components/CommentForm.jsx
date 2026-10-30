@@ -43,7 +43,6 @@ function CommentForm({
             setComment("");
 
         }
-
         finally {
 
             setSubmitting(false);
@@ -66,11 +65,13 @@ function CommentForm({
             <input
                 type="text"
                 value={username}
+
                 onChange={(event) =>
                     setUsername(
                         event.target.value
                     )
                 }
+
                 placeholder="Enter username"
             />
 
@@ -81,11 +82,13 @@ function CommentForm({
 
             <textarea
                 value={comment}
+
                 onChange={(event) =>
                     setComment(
                         event.target.value
                     )
                 }
+
                 placeholder="Write a comment..."
             />
 
@@ -95,9 +98,11 @@ function CommentForm({
                 className="dark-button"
                 disabled={submitting}
             >
+
                 {submitting
                     ? "Posting..."
                     : "Post comment"}
+
             </button>
 
         </form>

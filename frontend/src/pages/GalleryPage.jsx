@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { getCats } from "../services/api.js";
+import {
+    getCats,
+    getTags
+} from "../services/api.js";
 
 import CatCard from "../components/CatCard.jsx";
 import Pagination from "../components/Pagination.jsx";
@@ -8,72 +11,122 @@ import Pagination from "../components/Pagination.jsx";
 
 function GalleryPage() {
 
-    // stores cats from Django
     const [cats, setCats] = useState([]);
+    const [tags, setTags] = useState([]);
 
-    // stores selected tag
     const [selectedTag, setSelectedTag] =
         useState("");
 
-    // stores current page
     const [currentPage, setCurrentPage] =
         useState(1);
 
-    // loading message
+    const [totalCats, setTotalCats] =
+        useState(0);
+
     const [loading, setLoading] =
         useState(true);
 
-    // error message
     const [error, setError] =
         useState("");
 
+    const [tagError, setTagError] =
+        useState("");
 
     const catsPerPage = 8;
 
 
-    // gets real cats from Django
+    // loads tags from Django
+    useEffect(() => {
+
+        async function loadTags() {
+
+            try {
+
+                const data = await getTags();
+
+                setTags(
+                    [...new Set(data)].sort()
+                );
+
+                setTagError("");
+
+            }
+            catch (error) {
+
+                console.error(error);
+
+                setTags([]);
+
+                setTagError(
+                    "Could not load tags from Django."
+                );
+
+            }
+
+        }
+
+        loadTags();
+
+    }, []);
+
+
+    // loads only current page from Django
     useEffect(() => {
 
         async function loadCats() {
 
             try {
 
-                const data = await getCats();
+                setLoading(true);
+                setError("");
 
-                // converts CatAAS data into the format
-                // used by our React components
-                const formattedCats = data.map((cat) => {
+                const data = await getCats(
+                    currentPage,
+                    catsPerPage,
+                    selectedTag
+                );
 
-                    const catId =
-                        cat._id || cat.id;
+                const formattedCats =
+                    data.results.map((cat) => {
 
-                    return {
-                        id: catId,
+                        const catId =
+                            cat._id || cat.id;
 
-                        image:
-                            `https://cataas.com/cat/${catId}`,
+                        return {
 
-                        tags:
-                            cat.tags || []
-                    };
+                            id: catId,
 
-                });
+                            image:
+                                cat.image_url ||
+                                cat.image ||
+                                `https://cataas.com/cat/${catId}`,
 
+                            tags:
+                                cat.tags || []
+
+                        };
+
+                    });
 
                 setCats(formattedCats);
 
-            }
+                setTotalCats(
+                    data.count
+                );
 
+            }
             catch (error) {
 
                 console.error(error);
+
+                setCats([]);
+                setTotalCats(0);
 
                 setError(
                     "Could not load cats from Django."
                 );
 
             }
-
             finally {
 
                 setLoading(false);
@@ -82,48 +135,17 @@ function GalleryPage() {
 
         }
 
-
         loadCats();
 
-    }, []);
+    }, [currentPage, selectedTag]);
 
 
-    // creates tag list from real cat data
-    const allTags = [
-        ...new Set(
-            cats.flatMap(
-                (cat) => cat.tags
-            )
+    const totalPages = Math.max(
+        1,
+        Math.ceil(
+            totalCats / catsPerPage
         )
-    ].sort();
-
-
-    // filters cats
-    const filteredCats = selectedTag
-        ? cats.filter((cat) =>
-            cat.tags.includes(selectedTag)
-        )
-        : cats;
-
-
-    // number of pages
-    const totalPages = Math.ceil(
-        filteredCats.length / catsPerPage
     );
-
-
-    // cats for current page
-    const startIndex =
-        (currentPage - 1) * catsPerPage;
-
-    const endIndex =
-        startIndex + catsPerPage;
-
-    const currentCats =
-        filteredCats.slice(
-            startIndex,
-            endIndex
-        );
 
 
     function handleTagChange(event) {
@@ -140,7 +162,6 @@ function GalleryPage() {
     function handleClearFilter() {
 
         setSelectedTag("");
-
         setCurrentPage(1);
 
     }
@@ -153,43 +174,11 @@ function GalleryPage() {
             pageNumber <= totalPages
         ) {
 
-            setCurrentPage(pageNumber);
+            setCurrentPage(
+                pageNumber
+            );
 
         }
-
-    }
-
-
-    if (loading) {
-
-        return (
-            <div className="page">
-
-                <main>
-                    <p>
-                        Loading cats...
-                    </p>
-                </main>
-
-            </div>
-        );
-
-    }
-
-
-    if (error) {
-
-        return (
-            <div className="page">
-
-                <main>
-                    <p>
-                        {error}
-                    </p>
-                </main>
-
-            </div>
-        );
 
     }
 
@@ -228,19 +217,18 @@ function GalleryPage() {
                             Filter by tag
                         </label>
 
-
                         <select
                             id="tag-filter"
                             value={selectedTag}
                             onChange={handleTagChange}
+                            disabled={tags.length === 0}
                         >
 
                             <option value="">
                                 Select tag
                             </option>
 
-
-                            {allTags.map((tag) => (
+                            {tags.map((tag) => (
 
                                 <option
                                     key={tag}
@@ -266,32 +254,79 @@ function GalleryPage() {
                 </section>
 
 
+                {tagError && (
+
+                    <p className="error-message">
+                        {tagError}
+                    </p>
+
+                )}
+
+
                 <p className="showing-text">
-                    Showing {filteredCats.length} cats
+
+                    Showing {cats.length} of {totalCats} cats
+
                 </p>
 
 
-                <section className="cat-grid">
+                {loading && (
 
-                    {currentCats.map((cat) => (
+                    <p>
+                        Loading cats...
+                    </p>
 
-                        <CatCard
-                            key={cat.id}
-                            cat={cat}
-                        />
-
-                    ))}
-
-                </section>
+                )}
 
 
-                {totalPages > 1 && (
+                {error && !loading && (
 
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                    />
+                    <p className="error-message">
+                        {error}
+                    </p>
+
+                )}
+
+
+                {!loading && !error && (
+
+                    <>
+
+                        <section className="cat-grid">
+
+                            {cats.map((cat) => (
+
+                                <CatCard
+                                    key={cat.id}
+                                    cat={cat}
+                                />
+
+                            ))}
+
+                        </section>
+
+
+                        {totalPages > 1 && (
+
+                            <Pagination
+
+                                currentPage={
+                                    currentPage
+                                }
+
+                                totalPages={
+                                    totalPages
+                                }
+
+                                onPageChange={
+                                    handlePageChange
+                                }
+
+                            />
+
+                        )}
+
+                    </>
 
                 )}
 

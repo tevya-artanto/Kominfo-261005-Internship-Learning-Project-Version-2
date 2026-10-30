@@ -18,12 +18,53 @@ from django.contrib import admin
 from django.urls import path
 
 from catGallery.catG.views import (
-    ReactView,getCat,addTexttoCat,AllCats,getSpecificCat)
+    ReactView,
+    addTexttoCat,
+    AllCats,
+    getSpecificCat,
+    getTag
+)
 
-urlpatterns = [path("admin/",admin.site.urls),
-    # path("",getCat,name="getCat"),
-    path("api/cats/",AllCats.as_view(),name="allCats"),
-    path("api/cats/<str:pk>",getSpecificCat,name="getCat"),
-    path("api/cats/<str:pk>/comments/",ReactView.as_view(),name="react-view"),
-    path("api/cats/<str:pk>/says/",addTexttoCat,name="addText"),
+
+urlpatterns = [
+
+    path(
+        "admin/",
+        admin.site.urls
+    ),
+
+    # gets paginated cats
+    path(
+        "api/cats/",
+        AllCats.as_view(),
+        name="allCats"
+    ),
+
+    # gets tags from CatAAS
+    path(
+        "api/tags/",
+        getTag,
+        name="getTags"
+    ),
+
+    # gets one selected cat
+    path(
+        "api/cats/<str:pk>",
+        getSpecificCat,
+        name="getSpecificCat"
+    ),
+
+    # comments for selected cat
+    path(
+        "api/cats/<str:pk>/comments/",
+        ReactView.as_view(),
+        name="comments"
+    ),
+
+    # adds text to selected cat
+    path(
+        "api/cats/<str:pk>/says/",
+        addTexttoCat,
+        name="addText"
+    ),
 ]

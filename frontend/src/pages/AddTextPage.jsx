@@ -9,14 +9,15 @@ import {
 } from "react-router-dom";
 
 import {
-    getCats,
+    getCat,
     addTextToCat
 } from "../services/api.js";
 
 
 function AddTextPage() {
 
-    const { catId } = useParams();
+    const { catId } =
+        useParams();
 
 
     const [cat, setCat] =
@@ -57,60 +58,47 @@ function AddTextPage() {
     ] = useState("");
 
 
-    // loads real cat
+    // loads selected cat from Django
     useEffect(() => {
 
         async function loadCat() {
 
             try {
 
+                setLoading(true);
+                setError("");
+
+
                 const data =
-                    await getCats();
-
-
-                const selectedCat =
-                    data.find(
-                        (item) =>
-                            item.id === catId ||
-                            item._id === catId
+                    await getCat(
+                        catId
                     );
-
-
-                if (!selectedCat) {
-
-                    setError(
-                        "Cat not found"
-                    );
-
-                    return;
-
-                }
-
-
-                const realId =
-                    selectedCat.id ||
-                    selectedCat._id;
 
 
                 setCat({
-                    id: realId,
+
+                    id:
+                        data.id ||
+                        data._id ||
+                        catId,
 
                     image:
-                        `https://cataas.com/cat/${realId}`
+                        data.image_url ||
+                        data.image ||
+                        `https://cataas.com/cat/${catId}`
+
                 });
 
             }
-
             catch (error) {
 
                 console.error(error);
 
                 setError(
-                    "Could not load cat."
+                    "Could not load this cat from Django."
                 );
 
             }
-
             finally {
 
                 setLoading(false);
@@ -125,7 +113,6 @@ function AddTextPage() {
     }, [catId]);
 
 
-    // asks Django to generate image
     async function handleGenerate() {
 
         if (
@@ -144,17 +131,24 @@ function AddTextPage() {
 
             const imageUrl =
                 await addTextToCat(
+
                     cat.id,
+
                     imageText.trim(),
-                    Number(textSize),
+
+                    Number(
+                        textSize
+                    ),
+
                     textColor
+
                 );
 
 
             if (!imageUrl) {
 
                 throw new Error(
-                    "Backend did not return an image."
+                    "Backend did not return an image URL."
                 );
 
             }
@@ -165,17 +159,15 @@ function AddTextPage() {
             );
 
         }
-
         catch (error) {
 
             console.error(error);
 
             setGenerateError(
-                "Add text backend is not available yet."
+                "Could not generate image from Django."
             );
 
         }
-
         finally {
 
             setGenerating(false);
@@ -263,15 +255,19 @@ function AddTextPage() {
                     Text
                 </label>
 
+
                 <input
                     id="image-text"
                     type="text"
+
                     value={imageText}
+
                     onChange={(event) =>
                         setImageText(
                             event.target.value
                         )
                     }
+
                     placeholder="Enter text"
                 />
 
@@ -280,12 +276,16 @@ function AddTextPage() {
                     Text size
                 </label>
 
+
                 <input
                     id="text-size"
                     type="number"
+
                     min="10"
                     max="100"
+
                     value={textSize}
+
                     onChange={(event) =>
                         setTextSize(
                             event.target.value
@@ -304,13 +304,16 @@ function AddTextPage() {
                     <input
                         id="text-color"
                         type="color"
+
                         value={textColor}
+
                         onChange={(event) =>
                             setTextColor(
                                 event.target.value
                             )
                         }
                     />
+
 
                     <span>
                         {textColor}
@@ -322,12 +325,20 @@ function AddTextPage() {
                 <button
                     type="button"
                     className="dark-button"
-                    onClick={handleGenerate}
-                    disabled={generating}
+
+                    onClick={
+                        handleGenerate
+                    }
+
+                    disabled={
+                        generating
+                    }
                 >
+
                     {generating
                         ? "Generating..."
                         : "Generate image"}
+
                 </button>
 
 

@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 
 import {
-    getCats,
+    getCat,
     getComments,
     postComment
 } from "../services/api.js";
@@ -23,7 +23,8 @@ import CommentForm
 
 function CatDetailsPage() {
 
-    const { catId } = useParams();
+    const { catId } =
+        useParams();
 
 
     const [cat, setCat] =
@@ -32,73 +33,60 @@ function CatDetailsPage() {
     const [comments, setComments] =
         useState([]);
 
+
     const [loading, setLoading] =
         useState(true);
 
     const [error, setError] =
         useState("");
 
-    const [commentError, setCommentError] =
-        useState("");
+    const [
+        commentError,
+        setCommentError
+    ] = useState("");
 
 
-    // gets selected cat
+    // loads only selected cat
     useEffect(() => {
 
         async function loadCat() {
 
             try {
 
+                setLoading(true);
+                setError("");
+
                 const data =
-                    await getCats();
-
-
-                const selectedCat =
-                    data.find(
-                        (item) =>
-                            item.id === catId ||
-                            item._id === catId
-                    );
-
-
-                if (!selectedCat) {
-
-                    setError(
-                        "Cat not found"
-                    );
-
-                    return;
-
-                }
-
-
-                const realId =
-                    selectedCat.id ||
-                    selectedCat._id;
+                    await getCat(catId);
 
 
                 setCat({
-                    id: realId,
+
+                    id:
+                        data.id ||
+                        data._id ||
+                        catId,
 
                     image:
-                        `https://cataas.com/cat/${realId}`,
+                        data.image_url ||
+                        data.image ||
+                        `https://cataas.com/cat/${catId}`,
 
                     tags:
-                        selectedCat.tags || []
+                        data.tags || []
+
                 });
 
             }
-
             catch (error) {
 
                 console.error(error);
 
                 setError(
-                    "Could not load cat."
+                    "Could not load this cat from Django."
                 );
 
             }
-
             finally {
 
                 setLoading(false);
@@ -113,7 +101,7 @@ function CatDetailsPage() {
     }, [catId]);
 
 
-    // gets comments from Django
+    // loads comments for this cat only
     useEffect(() => {
 
         async function loadComments() {
@@ -125,12 +113,22 @@ function CatDetailsPage() {
                         catId
                     );
 
-                setComments(data);
+
+                setComments(
+
+                    Array.isArray(data)
+                        ? data
+                        : (
+                            data.results ??
+                            []
+                        )
+
+                );
+
 
                 setCommentError("");
 
             }
-
             catch (error) {
 
                 console.error(error);
@@ -138,7 +136,7 @@ function CatDetailsPage() {
                 setComments([]);
 
                 setCommentError(
-                    "Comments backend is not available yet."
+                    "Could not load comments for this cat."
                 );
 
             }
@@ -151,7 +149,6 @@ function CatDetailsPage() {
     }, [catId]);
 
 
-    // sends comment to Django
     async function handleAddComment(
         username,
         content
@@ -169,7 +166,6 @@ function CatDetailsPage() {
             );
 
 
-            // reloads comments from database
             const updatedComments =
                 await getComments(
                     catId
@@ -177,11 +173,19 @@ function CatDetailsPage() {
 
 
             setComments(
-                updatedComments
+
+                Array.isArray(
+                    updatedComments
+                )
+                    ? updatedComments
+                    : (
+                        updatedComments.results ??
+                        []
+                    )
+
             );
 
         }
-
         catch (error) {
 
             console.error(error);
@@ -291,7 +295,7 @@ function CatDetailsPage() {
                             )
                             : (
                                 <p>
-                                    No tags
+                                    No tags returned by backend
                                 </p>
                             )
                         }

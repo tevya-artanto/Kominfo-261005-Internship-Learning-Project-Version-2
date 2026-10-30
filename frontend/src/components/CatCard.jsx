@@ -25,13 +25,15 @@ function CatCard({ cat }) {
 
                     <div className="tags">
 
-                        {cat.tags.map((tag) => (
+                        {cat.tags.map(
+                            (tag) => (
 
-                            <span key={tag}>
-                                {tag}
-                            </span>
+                                <span key={tag}>
+                                    {tag}
+                                </span>
 
-                        ))}
+                            )
+                        )}
 
                     </div>
 
@@ -42,5 +44,6 @@ function CatCard({ cat }) {
         </Link>
     );
 }
+
 
 export default CatCard;
