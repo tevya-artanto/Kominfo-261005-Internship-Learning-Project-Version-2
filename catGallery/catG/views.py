@@ -44,9 +44,25 @@ class AllCats(APIView):
         except requests.exceptions.HTTPError as e:
             return JsonResponse(e, safe=False)
 
+        # gets total number of cats from CatAAS
+        countResponse = requests.get(
+            "https://cataas.com/api/count",
+            timeout=15
+        )
+
+        countResponse.raise_for_status()
+
+        totalCats = countResponse.json()["count"]
+
+        # returns the cats that were already paginated by CatAAS
+        return Response({
+            "count": totalCats,
+            "results": data
+        })
+
         # Paginates data
-        paginatedData = paginator.paginate_queryset(data, request, view=self)
-        return paginator.get_paginated_response(paginatedData)
+        # paginatedData = paginator.paginate_queryset(data, request, view=self)
+        # return paginator.get_paginated_response(paginatedData)
 
 # [DEPRECATED] Get all cat data from CataaS API
 # def getCat(request):
