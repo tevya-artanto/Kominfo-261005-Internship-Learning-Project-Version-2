@@ -4,7 +4,7 @@ from .models import Comment
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import CommentSerializer
-import requests
+import requests, datetime, json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.pagination import LimitOffsetPagination
@@ -19,22 +19,27 @@ class localPagination(LimitOffsetPagination):
 class AllCats(APIView):
     pagination_class = localPagination
 
-    def getAllCats(self, request, *args, **kwargs):
-        paginator = self.pagination_class
+    def get(self, request, *args, **kwargs):
+        paginator = self.pagination_class()
 
         # Get page limit
         limit = paginator.get_limit(request)
         # Get offset (index of first cat)
         offset = paginator.get_offset(request)
+        # Get tag if sent
+        tag = request.GET.get('tag')
 
         catURL = "https://cataas.com/api/cats"
         params = {
             "limit": limit,
-            "skip": offset
+            "skip": offset,
         }
 
+        if tag:
+            params['tags'] = tag    
+
         try:
-            response = requests.get(catURL, params=params, timeout=5)
+            response = requests.get(catURL, params=params, timeout=15)
             data = response.json()        
         except requests.exceptions.HTTPError as e:
             return JsonResponse(e, safe=False)
@@ -58,6 +63,8 @@ class AllCats(APIView):
 @api_view(["POST"])
 def getSpecificCat(request, pk):
     catImage = (f"https://cataas.com/cat/"f"{pk}")
+    # catJson = requests.get("https://cataas.com/cat/" + pk + "?json=true", timeout=5)
+    # catTag = json.loads(catJson)
     return Response({"image_url": catImage})
 
 # Gets list of tags
@@ -77,7 +84,10 @@ class ReactView(APIView):
     def get(self, request, pk):
         getQuery = "SELECT * FROM catG_comment WHERE catID = '" + pk + "';"
         getQuerySet = Comment.objects.raw(getQuery)
-        allComments = list(getQuerySet)
+        allComments = [
+            {"id": obj.id, "catID": pk, "username": obj.username, "content": obj.content, "date_posted": obj.date_posted}
+            for obj in getQuerySet
+        ]
         return Response(allComments)
 
         # [DEPRECATED]
@@ -88,9 +98,12 @@ class ReactView(APIView):
         # return Response(detail)
 
     def post(self, request, pk):
+        currentTime = datetime.datetime.now()
         postQuery = "INSERT INTO catG_comment (catID, username, content, date_posted) VALUES (%s, %s, %s, %s)"
         with connection.cursor() as cursor:
-            cursor.execute(postQuery, request.data.get("catID"), request.data.get("username"), request.data.get("content"), request.data.get("date_posted"))
+            cursor.execute(postQuery, [request.data.get("catID"), request.data.get("username"), request.data.get("content"), currentTime.strftime("%c")])
+            newComment = {"id": cursor.lastrowid, "catID" : request.data.get("catID"), "username" : request.data.get("username"), "content" : request.data.get("content"), "date_posted" : currentTime.strftime("%c")}
+        return Response(newComment)
         
         # [DEPRECATED]
         #  serializer = CommentSerializer(data=request.data)
