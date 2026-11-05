@@ -63,9 +63,10 @@ class AllCats(APIView):
 @api_view(["POST"])
 def getSpecificCat(request, pk):
     catImage = (f"https://cataas.com/cat/"f"{pk}")
-    # catJson = requests.get("https://cataas.com/cat/" + pk + "?json=true", timeout=5)
-    # catTag = json.loads(catJson)
-    return Response({"image_url": catImage})
+    catJsonReq = requests.get("https://cataas.com/cat/" + pk + "?json=true", timeout=5)
+    catJson = catJsonReq.json()
+    catTags = catJson["tags"]
+    return Response({"image_url": catImage, "tags": catTags})
 
 # Gets list of tags
 def getTag(request):
