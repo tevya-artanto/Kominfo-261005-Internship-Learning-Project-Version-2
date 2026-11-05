@@ -84,11 +84,15 @@ class ReactView(APIView):
 
     def get(self, request, pk):
         getQuery = "SELECT * FROM catG_comment WHERE catID = '" + pk + "';"
-        getQuerySet = Comment.objects.raw(getQuery)
+        with connection.cursor() as cursor:
+            cursor.execute(getQuery)
+            rows = cursor.fetchall()
+
         allComments = [
-            {"id": obj.id, "catID": pk, "username": obj.username, "content": obj.content, "date_posted": obj.date_posted}
-            for obj in getQuerySet
+            {"id": obj[0], "catID": obj[1], "username": obj[2], "content": obj[3], "date_posted": obj[4]}
+            for obj in rows
         ]
+
         return Response(allComments)
 
         # [DEPRECATED]
